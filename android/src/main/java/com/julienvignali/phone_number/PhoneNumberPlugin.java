@@ -1,130 +1,115 @@
 package com.julienvignali.phone_number;
 
-import android.telephony.PhoneNumberUtils;
-
-import com.google.i18n.phonenumbers.AsYouTypeFormatter;
-import com.google.i18n.phonenumbers.NumberParseException;
-import com.google.i18n.phonenumbers.PhoneNumberUtil;
-import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberType;
-import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
-
-import java.util.HashMap;
-
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
 
-public class PhoneNumberPlugin implements MethodCallHandler {
+import com.google.i18n.phonenumbers.NumberParseException;
+import com.google.i18n.phonenumbers.PhoneNumberUtil;
+import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberType;
+import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber.CountryCodeSource;
+import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 
+import java.util.HashMap;
+
+
+public class PhoneNumberPlugin implements MethodCallHandler {
     public static void registerWith(Registrar registrar) {
-        final MethodChannel channel = new MethodChannel(registrar.messenger(), "phone_number");
+        final MethodChannel channel = new MethodChannel(registrar.messenger(), "com.julienvignali.phone_number");
         channel.setMethodCallHandler(new PhoneNumberPlugin());
     }
 
     @Override
     public void onMethodCall(MethodCall call, Result result) {
-        if (call.method.equals("parse")) {
-            parse(call, result);
-        } else if(call.method.equals("format")) {
-            format(call, result);
+        if (call.method.equals("parseAndKeepRawInput")) {
+            parseAndKeepRawInput(call, result);
         } else {
             result.notImplemented();
         }
     }
 
-    private void format(MethodCall call, Result result) {
-        final String region = call.argument("region");
-        final String number = call.argument("string");
-
-        if(number == null) {
-            result.error("InvalidParameters", "Invalid 'string' parameter.", null);
-        }
-
+    private void parseAndKeepRawInput(MethodCall call, Result result) {
+        final PhoneNumberUtil util = PhoneNumberUtil.getInstance();
         try {
-            final PhoneNumberUtil util = PhoneNumberUtil.getInstance();
-            final AsYouTypeFormatter formatter = util.getAsYouTypeFormatter(region);
+            final String region = call.argument("region");
+            String number = call.argument("number");
+            final PhoneNumber phoneNumber = util.parseAndKeepRawInput(number, region);
 
-            String formatted = "";
-            formatter.clear();
-            for (char character : number.toCharArray()) {
-                formatted = formatter.inputDigit(character);
-            }
+            final HashMap<String, String> formats = new HashMap<String, String>() {{
+                put("e164", util.format(phoneNumber, PhoneNumberUtil.PhoneNumberFormat.E164));
+                put("international", util.format(phoneNumber, PhoneNumberUtil.PhoneNumberFormat.INTERNATIONAL));
+                put("national", util.format(phoneNumber, PhoneNumberUtil.PhoneNumberFormat.NATIONAL));
+                put("rfc3966", util.format(phoneNumber, PhoneNumberUtil.PhoneNumberFormat.RFC3966));
+            }};
 
-            HashMap<String, String> res = new HashMap<>();
-            res.put("formatted", formatted);
+            HashMap<String, Object> map = new HashMap<String, Object>() {{
+                put("rawInput", phoneNumber.getRawInput());
+                put("countryCode", phoneNumber.getCountryCode());
+                put("extension", phoneNumber.getExtension());
+                put("nationalNumber", phoneNumber.getNationalNumber());
+                put("italianLeadingZero", phoneNumber.isItalianLeadingZero());
+                put("countryCodeSource", countryCodeSourceToInt(phoneNumber.getCountryCodeSource()));
+                put("isValidNumber", util.isValidNumber(phoneNumber));
+                put("isPossibleNumber", util.isPossibleNumber(phoneNumber));
+                put("isValidNumberForRegion", util.isValidNumberForRegion(phoneNumber, region));
+                put("type", numberTypeToInt(util.getNumberType(phoneNumber)));
+                put("region", util.getRegionCodeForNumber(phoneNumber));
+                put("e164", util.format(phoneNumber, PhoneNumberUtil.PhoneNumberFormat.E164));
+                put("international", util.format(phoneNumber, PhoneNumberUtil.PhoneNumberFormat.INTERNATIONAL));
+                put("national", util.format(phoneNumber, PhoneNumberUtil.PhoneNumberFormat.NATIONAL));
+                put("formats", formats);
 
-            result.success(res);
-        } catch (Exception exception) {
-            result.error("InvalidNumber", "Number " + number + " is invalid", null);
+            }};
+            result.success(map);
+        } catch (NumberParseException e) {
+            result.error(e.getErrorType().name(), e.getLocalizedMessage(), null);
         }
     }
 
-    private void parse(MethodCall call, Result result) {
-        String region = call.argument("region");
-        String string = call.argument("string");
-
-        if (string == null || string.isEmpty()) {
-            result.error("InvalidParameters", "Invalid 'string' parameter.", null);
-        } else {
-            // Try to parse the string to a phone number for a given region.
-
-            // If the parsing is successful, we return a map containing :
-            // - the number in the E164 format
-            // - the number in the international format
-            // - the number formatted as a national number and without the international prefix
-            // - the type of number (might not be 100% accurate)
-            final PhoneNumberUtil util = PhoneNumberUtil.getInstance();
-            try {
-                final PhoneNumber phoneNumber = util.parse(string, region);
-                if (util.isValidNumber(phoneNumber)) {
-                    HashMap<String, String> res = new HashMap<String, String>() {{
-                        PhoneNumberType type = util.getNumberType(phoneNumber);
-                        put("type", numberTypeToString(type));
-                        put("e164", util.format(phoneNumber, PhoneNumberUtil.PhoneNumberFormat.E164));
-                        put("international", util.format(phoneNumber, PhoneNumberUtil.PhoneNumberFormat.INTERNATIONAL));
-                        put("national", util.format(phoneNumber, PhoneNumberUtil.PhoneNumberFormat.NATIONAL));
-                    }};
-                    result.success(res);
-                } else {
-                    result.error("InvalidNumber", "Number " + string + " is invalid", null);
-                }
-
-            } catch (NumberParseException e) {
-                result.error("InvalidNumber", "Number " + string + " is invalid", null);
-            }
-        }
-    }
-
-    private String numberTypeToString(PhoneNumberUtil.PhoneNumberType type) {
+    private int numberTypeToInt(PhoneNumberType type) {
         switch (type) {
             case FIXED_LINE:
-                return "fixedLine";
+                return 0;
             case MOBILE:
-                return "mobile";
+                return 1;
             case FIXED_LINE_OR_MOBILE:
-                return "fixedOrMobile";
+                return 2;
             case TOLL_FREE:
-                return "tollFree";
+                return 3;
             case PREMIUM_RATE:
-                return "premiumRate";
+                return 4;
             case SHARED_COST:
-                return "sharedCost";
+                return 5;
             case VOIP:
-                return "voip";
+                return 6;
             case PERSONAL_NUMBER:
-                return "personalNumber";
+                return 7;
             case PAGER:
-                return "pager";
+                return 8;
             case UAN:
-                return "uan";
+                return 9;
             case VOICEMAIL:
-                return "voicemail";
-            case UNKNOWN:
-                return "unknown";
+                return 10;
             default:
-                return "notParsed";
+                return -1;
+        }
+    }
+
+    private int countryCodeSourceToInt(CountryCodeSource source) {
+        switch (source) {
+            case FROM_DEFAULT_COUNTRY:
+                return 20;
+            case FROM_NUMBER_WITHOUT_PLUS_SIGN:
+                return 10;
+            case FROM_NUMBER_WITH_PLUS_SIGN:
+                return 1;
+            case FROM_NUMBER_WITH_IDD:
+                return 5;
+            case UNSPECIFIED:
+            default:
+                return -1;
         }
     }
 }
