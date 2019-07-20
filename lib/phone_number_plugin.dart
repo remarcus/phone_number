@@ -4,11 +4,14 @@ import 'package:flutter/services.dart';
 class PhoneNumberPlugin {
   static const _channel = const MethodChannel('com.julienvignali.phone_number');
 
-  static Future<ParseResult> parseAndKeepRawInput({
+  Future<ParseResult> parseAndKeepRawInput({
     @required String number,
     String region,
   }) {
-    final args = {'number': number, 'region': region};
+    final args = {
+      'number': number.trim(),
+      'region': region.toUpperCase(),
+    };
     return _channel
         .invokeMapMethod<String, dynamic>('parseAndKeepRawInput', args)
         .then(ParseResult.fromMap);
