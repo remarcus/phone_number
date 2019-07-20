@@ -1,5 +1,7 @@
 package com.julienvignali.phone_number;
 
+import androidx.annotation.NonNull;
+
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
@@ -22,7 +24,7 @@ public class PhoneNumberPlugin implements MethodCallHandler {
     }
 
     @Override
-    public void onMethodCall(MethodCall call, Result result) {
+    public void onMethodCall(@NonNull MethodCall call, @NonNull Result result) {
         if (call.method.equals("parseAndKeepRawInput")) {
             parseAndKeepRawInput(call, result);
         } else {
@@ -53,7 +55,6 @@ public class PhoneNumberPlugin implements MethodCallHandler {
                 put("countryCodeSource", countryCodeSourceToInt(phoneNumber.getCountryCodeSource()));
                 put("isValidNumber", util.isValidNumber(phoneNumber));
                 put("isPossibleNumber", util.isPossibleNumber(phoneNumber));
-                put("isValidNumberForRegion", util.isValidNumberForRegion(phoneNumber, region));
                 put("type", numberTypeToInt(util.getNumberType(phoneNumber)));
                 put("region", util.getRegionCodeForNumber(phoneNumber));
                 put("e164", util.format(phoneNumber, PhoneNumberUtil.PhoneNumberFormat.E164));

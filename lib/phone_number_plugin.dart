@@ -24,7 +24,6 @@ class ParseResult {
   final int nationalNumber;
   final bool isPossibleNumber;
   final bool isValidNumber;
-  final bool isValidNumberForRegion;
   final String region;
   final PhoneNumberType type;
   final Formats formats;
@@ -39,7 +38,6 @@ class ParseResult {
     this.nationalNumber,
     this.isPossibleNumber,
     this.isValidNumber,
-    this.isValidNumberForRegion,
     this.region,
     this.type,
   });
@@ -54,7 +52,6 @@ class ParseResult {
       nationalNumber: map['nationalNumber'],
       isPossibleNumber: map['isPossibleNumber'],
       isValidNumber: map['isValidNumber'],
-      isValidNumberForRegion: map['isValidNumberForRegion'],
       region: map['region'],
       type: toPhoneNumberType(map['type']),
       formats: Formats.fromMap(map['formats']),
@@ -76,7 +73,21 @@ class ParseResult {
 
   @override
   String toString() {
-    return 'ParseResult{countryCode: $countryCode, countryCodeSource: $countryCodeSource, italianLeadingZero: $italianLeadingZero, rawInput: $rawInput, extension: $extension, nationalNumber: $nationalNumber, isPossibleNumber: $isPossibleNumber, isValidNumber: $isValidNumber, isValidNumberForRegion: $isValidNumberForRegion, region: $region, type: $type, formats: $formats}';
+    return """
+ParseResult {
+  countryCode: $countryCode, 
+  countryCodeSource: $countryCodeSource, 
+  italianLeadingZero: $italianLeadingZero, 
+  rawInput: $rawInput, 
+  extension: $extension, 
+  nationalNumber: $nationalNumber, 
+  isPossibleNumber: $isPossibleNumber, 
+  isValidNumber: $isValidNumber, 
+  region: $region, 
+  type: $type, 
+  formats: $formats
+}
+    """;
   }
 }
 

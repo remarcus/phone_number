@@ -42,7 +42,6 @@
                                  phoneNumber.countryCodeSource, @"countryCodeSource",
                                  @([util isValidNumber:phoneNumber]), @"isValidNumber",
                                  @([util isPossibleNumber:phoneNumber]), @"isPossibleNumber",
-                                 @([util isValidNumberForRegion:phoneNumber regionCode:region]), @"isValidNumberForRegion",
                                  @([util getNumberType:phoneNumber]), @"type",
                                  [util getRegionCodeForNumber:phoneNumber], @"region",
                                  nil];
